@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+import argparse
+import asyncio
+import sys
+
+import tomli
+import uvicorn
+import uvloop
+
+from src import app
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="ghirc",
+        description="IRC bot for GitHub webhooks",
+        epilog="Contribute code and bug reports to "
+        "https://github.com/tfaughnan/ghirc",
+    )
+    parser.add_argument(
+        "-c",
+        "--config",
+        default="~/.config/ghirc.toml",
+        help="Specify config file (default: %(default)s)",
+    )
+    args = parser.parse_args()
+    config = load_config(args.config)
+
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    uvicorn.run(
+        app=app.App(config),
+        host=config["uvicorn"]["host"],
+        port=config["uvicorn"]["port"],
+        loop='uvloop'
+    )
+
+
+def load_config(path="~/.config/ghirc.toml"):
+    try:
+        with open(path, "rb") as f:
+            try:
+                config = tomli.load(f)
+            except tomli.TOMLDecodeError:
+                sys.exit(f"{path} is not valid toml.")
+    except FileNotFoundError:
+        sys.exit("No config file found.")
+
+    # ensure we are not missing any fields
+    fields = {
+        "uvicorn": ("host", "port"),
+        "github": ("secret", "events"),
+        "irc": ("host", "port", "ssl", "nickname", "realname", "channels"),
+    }
+    if any(
+        any(filter(lambda f: f not in config[section], fields[section]))
+        for section in fields
+    ):
+        sys.exit("Missing required fields in config file.")
+
+    return config
+
+
+if __name__ == "__main__":
+    main()
