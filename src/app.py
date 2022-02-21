@@ -120,7 +120,7 @@ class App:
             req_headers = dict(scope["headers"])
             payload_raw = await self.read_body(receive)
 
-            gh_signature = req_headers.get(b"x-hub-signature-256").decode()
+            gh_signature = req_headers.get(b"x-hub-signature-256", b"").decode()
             if await self.valid_signature(payload_raw, gh_signature):
                 try:
                     payload = json.loads(payload_raw)
