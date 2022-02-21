@@ -32,7 +32,7 @@ def main():
         app=app.App(config),
         host=config["uvicorn"]["host"],
         port=config["uvicorn"]["port"],
-        loop='uvloop'
+        loop="uvloop",
     )
 
 
